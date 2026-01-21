@@ -1,0 +1,13 @@
+* {
+    margin: 0;
+    padding: 0;
+  }
+  .chart-container {
+    position: relative;
+    height: 50vh;
+    overflow: hidden;
+  }
+
+  .toolbar-spacer {
+    flex: 1 1 auto;
+  }

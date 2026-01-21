@@ -1,0 +1,54 @@
+<mat-toolbar color="primary">
+  <button mat-icon-button class="toolbar-icon" aria-label="">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <span>DEFI overview</span>
+  <span class="toolbar-spacer"></span>
+  <button mat-icon-button class="toolbar-icon" [matMenuTriggerFor]="menu" aria-label="{{userAddress || 'No account selected'}}">
+    <mat-icon>account_circle</mat-icon>
+  </button>
+  <mat-menu #menu="matMenu">
+  
+    @if (!isAuthenticated) {
+      <button mat-menu-item>
+        <mat-icon>login</mat-icon>
+        <span (click)="login()">Connect</span>
+      </button>
+    }
+    @else {
+      <button mat-menu-item>
+        <mat-icon>logout</mat-icon>
+        <span (click)="logout()">Disconnect</span>
+      </button>
+    }
+</mat-menu>
+  <button mat-icon-button class="example-icon" aria-label="Example icon-button with share icon">
+    <mat-icon>share</mat-icon>
+  </button>
+</mat-toolbar>
+
+
+<div>
+
+  <p></p>
+  <mat-form-field>
+    <mat-label>Choose an account</mat-label>
+    <mat-select matNativeControl [value]="selectedAccount" (selectionChange)="selectAccount($event)">
+      @for (account of accounts; track account) {
+        <mat-option [value] = "account" >{{account.label}}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Markets</mat-label>
+    <mat-select multiple (selectionChange)="selectMarket($event)">
+      @for (market of markets; track market) {
+        <mat-option [value]="market">{{market.chain}}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <p>Account: {{selectedAccount?.label}}</p>
+  <div echarts [options]="options" class="chart-container"></div>
+</div>
+
+<router-outlet />
