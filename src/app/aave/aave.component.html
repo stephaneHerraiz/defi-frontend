@@ -1,0 +1,17 @@
+<div>
+  <p></p>
+  <app-wallet-selection
+    [selectedAccount]="selectedAccount"
+    (accountChange)="selectAccount($event)">
+  </app-wallet-selection>
+  <mat-form-field>
+    <mat-label>Markets</mat-label>
+    <mat-select multiple (selectionChange)="selectMarket($event)">
+      @for (market of markets; track market) {
+        <mat-option [value]="market">{{market.chain}}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <p>Account: {{selectedAccount?.label}}</p>
+  <div echarts [options]="options" class="chart-container"></div>
+</div>

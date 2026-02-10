@@ -22,6 +22,7 @@
     "@metamask/detect-provider": "^2.0.0",
     "dayjs": "^1.11.13",
     "echarts": "^5.6.0",
+    "moment": "^2.30.1",
     "ngx-echarts": "^19.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",

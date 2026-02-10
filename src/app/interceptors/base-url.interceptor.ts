@@ -13,6 +13,9 @@ export class BaseUrlInterceptor implements HttpInterceptor {
     }
 
     intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+        if(request.url.startsWith('http')) {
+            return next.handle(request);
+        }
         const token = localStorage.getItem('JWT_Token');
         let apiReq = request.clone({ url: `${this.baseUrl}/${request.url}` });
         if (token) {

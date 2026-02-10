@@ -1,10 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { LifiChainInterface } from '../interfaces/lifi-chain.interface';
 import { LifiTransfersResponse } from '../interfaces/lifi-transfers-response.interface';
 import { LifiTransfersParams } from '../interfaces/lifi-transfers-params.interface';
-
+import { LifiToken } from '../interfaces/lifi-transaction.interface';
 @Injectable({
   providedIn: 'root'
 })
@@ -19,13 +19,18 @@ export class LifiService {
    * @param chainTypes Restrict the resulting chains to the given chainTypes (e.g., 'EVM', 'SOLANA')
    * @returns Observable of chains response
    */
-  getChains(chainTypes?: string): Observable<{ chains: LifiChainInterface[] }> {
+  getChains(chainTypes?: string): Observable<LifiChainInterface[]> {
     let params = new HttpParams();
     if (chainTypes) {
       params = params.set('chainTypes', chainTypes);
     }
 
-    return this.http.get<{ chains: LifiChainInterface[] }>(`${this.baseUrl}/v1/chains`, { params });
+    return this.http.get<{ chains: LifiChainInterface[] }>(`${this.baseUrl}/v1/chains`, { params })
+    .pipe(
+      map(response => {
+        return response.chains;
+      })
+    );
   }
 
   /**
@@ -93,5 +98,19 @@ export class LifiService {
     }
 
     return this.http.get<LifiTransfersResponse>(`${this.baseUrl}/v2/analytics/transfers`, { params });
+  }
+
+  /**
+   * Get information about a token by its address or symbol and chain
+   * @param chain Id or key of the chain that contains the token
+   * @param token Address or symbol of the token on the requested chain
+   * @returns Observable of token information
+   */
+  getTokenInformation(chain: string, token: string): Observable<LifiToken> {
+    let params = new HttpParams()
+      .set('chain', chain)
+      .set('token', token);
+
+    return this.http.get<LifiToken>(`${this.baseUrl}/v1/token`, { params });
   }
 }

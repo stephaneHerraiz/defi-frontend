@@ -19,6 +19,8 @@ export class AuthService {
   isLoggedIn: boolean = false;
   private unauthorizedSubject = new Subject<void>();
   public unauthorized$ = this.unauthorizedSubject.asObservable();
+  private loggedSubject = new Subject<void>();
+  public logged$ = this.loggedSubject.asObservable();
 
   constructor(private http: HttpClient) {
     const token = localStorage.getItem('JWT_Token');
@@ -76,6 +78,7 @@ export class AuthService {
           localStorage.setItem('JWT_Token', response.access_token);
           localStorage.setItem('User_Address', ethereum.selectedAddress);
           this.isLoggedIn = true;
+          this.loggedSubject.next();
       })
       
     );

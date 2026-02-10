@@ -1,0 +1,8 @@
+<mat-form-field>
+  <mat-label>Choose an account</mat-label>
+  <mat-select matNativeControl [value]="selectedAccount" (selectionChange)="selectAccount($event)">
+    @for (account of accounts; track account) {
+      <mat-option [value]="account">{{account.label}}</mat-option>
+    }
+  </mat-select>
+</mat-form-field>

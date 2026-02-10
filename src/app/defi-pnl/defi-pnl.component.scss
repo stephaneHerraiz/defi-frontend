@@ -1,0 +1,70 @@
+.pnl-container {
+  padding: 20px;
+  
+  h2 {
+    margin-bottom: 16px;
+    color: #333;
+  }
+
+  p {
+    color: #666;
+    margin-bottom: 24px;
+  }
+}
+
+.selectors-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  .year-selector {
+    min-width: 120px;
+  }
+}
+
+.pnl-content {
+  margin-top: 32px;
+  padding: 24px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  min-height: 400px;
+
+  h3 {
+    margin-top: 32px;
+    margin-bottom: 16px;
+    color: #333;
+  }
+
+  table {
+    width: 100%;
+    margin-bottom: 24px;
+  }
+}
+
+.negative {
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+.positive {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.token-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.token-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+tr.mat-mdc-footer-row td {
+  font-weight: bold;
+}
