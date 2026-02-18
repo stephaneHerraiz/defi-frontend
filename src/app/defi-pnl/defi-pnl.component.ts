@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import {MatTableModule} from '@angular/material/table';
 import {MatSelectModule} from '@angular/material/select';
 import {MatFormFieldModule} from '@angular/material/form-field';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { WalletSelectionComponent } from '../wallet-selection/wallet-selection.component';
@@ -39,7 +39,7 @@ export class DefiPnlComponent implements OnInit {
     }[] = [];
     totalPnl: number = 0;
     chains: LifiChainInterface[] = [];
-    selectedYear: number = moment().year() - 1;
+    selectedYear: number = dayjs().year() - 1;
     availableYears: number[] = [];
     private currentTokenInfoStore: {[key: string]: LifiToken} = {};
 
@@ -48,7 +48,7 @@ export class DefiPnlComponent implements OnInit {
 
     ngOnInit(): void {
         // Generate available years (from 2020 to current year)
-        const currentYear = moment().year();
+        const currentYear = dayjs().year();
         for (let year = currentYear; year >= 2020; year--) {
             this.availableYears.push(year);
         }
@@ -100,8 +100,8 @@ export class DefiPnlComponent implements OnInit {
             this.lifiService.getWalletTransfers(
                 { wallet: this.selectedAccount.address,
                     limit: 100,
-                    fromTimestamp: moment().year(year).startOf('year').unix(),
-                    toTimestamp: moment().year(year).endOf('year').unix(),
+                    fromTimestamp: dayjs().year(year).startOf('year').unix(),
+                    toTimestamp: dayjs().year(year).endOf('year').unix(),
 
             }).subscribe(transfers => {
                 this.transactions = transfers.data;
