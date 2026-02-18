@@ -2,10 +2,14 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EChartsCoreOption, VisualMapComponentOption } from 'echarts';
 import * as echarts from 'echarts/core';
+import {MatGridListModule} from '@angular/material/grid-list';
+import {MatExpansionModule} from '@angular/material/expansion';
+import {MatSliderModule} from '@angular/material/slider';
 import { AaveMarketService } from '../services/aave-market.service';
-import { AaveMarketStatusInterface, GetAaveMarketStatusInterface } from '../interfaces/aave-market-status.interface';
+import { AaveMarketStatus, GetAaveMarketHistoryInterface } from '../interfaces/aave-market-status.interface';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { WalletSelectionComponent } from '../wallet-selection/wallet-selection.component';
@@ -17,6 +21,7 @@ import { AaveTransactionActions, AaveTransactionInterface } from '../interfaces/
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { AuthService } from '../services/auth.service';
+import { UnderlyingToken } from '../interfaces/aave-market-reserve-info.interface';
 dayjs.extend(utc);
 
 const COLORS = [ 'blue', 'green', 'orange', 'purple', 'pink', 'brown', 'gray', 'black', 'yellow' ];
@@ -100,6 +105,10 @@ const DEFAULT_OPTIONS: EChartsCoreOption = {
     FormsModule,
     ReactiveFormsModule,
     WalletSelectionComponent,
+    MatCardModule,
+    MatGridListModule,
+    MatExpansionModule,
+    MatSliderModule,
   ],
   templateUrl: './aave.component.html',
   styleUrl: './aave.component.scss'
@@ -110,6 +119,9 @@ export class AaveComponent implements OnInit {
   markets: AaveMarketInterface[] = [];
   selectedAccount: AccountInterface | null = null;
   selectedMarkets: AaveMarketInterface[] = [];
+  marketStatus: AaveMarketStatus | null = null;
+  reservesInfo: UnderlyingToken[] = [];
+  editBorrowUSD = 0;
   
   private aaveMarketService = inject(AaveMarketService);
   private accountService = inject(AccountService);
@@ -155,12 +167,44 @@ export class AaveComponent implements OnInit {
 
   selectAccount(event: any) {
     this.selectedAccount = event.value;
-    this.updateChart();
+    try {
+      this.updateChart();
+    } catch (error) {
+      console.error('Error updating chart or getting market status:', error);
+    }
+    this.getMarketStatus();
   }
 
   selectMarket(event: any) {
-    this.selectedMarkets = event.value;
-    this.updateChart();
+    this.selectedMarkets = [];
+    this.selectedMarkets.push(event.value);
+    this.aaveMarketService.getMarketReservesInfo(event.value.chainid).subscribe((reserves) => {
+      this.reservesInfo = reserves;
+    });
+    try {
+      this.updateChart();
+    } catch (error) {
+      console.error('Error updating chart or getting market status:', error);
+    }
+    this.getMarketStatus();
+  }
+
+  getMarketStatus() {
+    if (!this.selectedAccount || this.selectedMarkets.length === 0) {
+      return;
+    }
+    const userAddress = this.authService.getUserAddress();
+    if(!userAddress) {
+      return;
+    }
+    this.aaveMarketService.getMarketStatus(this.selectedAccount.address, userAddress, this.selectedMarkets[0].chain)
+      .subscribe((marketStatus: AaveMarketStatus) => {
+        this.marketStatus = marketStatus;
+      });
+  }
+
+  getReservesInfo(tokenAddress: string): UnderlyingToken | undefined  {
+    return this.reservesInfo.find((reserve) => reserve.address.toLowerCase() === tokenAddress.toLowerCase());
   }
 
   updateChart() {
@@ -172,18 +216,18 @@ export class AaveComponent implements OnInit {
       return;
     }
 
-    const getMarketPromise: Observable<GetAaveMarketStatusInterface>[] = [];
+    const getMarketPromise: Observable<GetAaveMarketHistoryInterface>[] = [];
     this.selectedMarkets.forEach((market: AaveMarketInterface) => {
       getMarketPromise.push(this.aaveMarketService.get(this.selectedAccount?.address, market.chain));
     });
     
-    forkJoin(getMarketPromise).subscribe((result: GetAaveMarketStatusInterface[]) => {
+    forkJoin(getMarketPromise).subscribe((result: GetAaveMarketHistoryInterface[]) => {
       const series: any[] = [];
       const legend: string[] = [];
       const visualMaps: VisualMapComponentOption[] = [];
       let index = 0;
       
-      result.forEach((_marketStatus: GetAaveMarketStatusInterface) => {
+      result.forEach((_marketStatus: GetAaveMarketHistoryInterface) => {
         let serie = {
           type: 'line',
           name: _marketStatus.market || '',

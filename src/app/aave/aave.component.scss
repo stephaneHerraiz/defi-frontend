@@ -2,3 +2,25 @@
   height: 600px;
   width: 100%;
 }
+
+.scenario-card {
+  max-width: 900px;
+  margin-bottom: 8px;
+}
+
+.negative {
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+.positive {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.token-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+

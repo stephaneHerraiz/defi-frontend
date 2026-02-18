@@ -1,17 +1,91 @@
 <div>
   <p></p>
-  <app-wallet-selection
-    [selectedAccount]="selectedAccount"
-    (accountChange)="selectAccount($event)">
-  </app-wallet-selection>
-  <mat-form-field>
-    <mat-label>Markets</mat-label>
-    <mat-select multiple (selectionChange)="selectMarket($event)">
-      @for (market of markets; track market) {
-        <mat-option [value]="market">{{market.chain}}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
+  <div style="display: flex; align-items: center; gap: 16px;">
+    <app-wallet-selection
+      [selectedAccount]="selectedAccount"
+      (accountChange)="selectAccount($event)">
+    </app-wallet-selection>
+    <mat-form-field>
+      <mat-label>Markets</mat-label>
+      <mat-select (selectionChange)="selectMarket($event)">
+        @for (market of markets; track market) {
+          <mat-option [value]="market">{{market.chain}}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
   <p>Account: {{selectedAccount?.label}}</p>
+   @if(marketStatus?.monthlyBBScenario) {
+  <h4>Current Total borrowed: {{marketStatus?.totalBorrowsUSD| currency}}</h4>
+  <mat-card class="scenario-card" appearance="outlined">
+    <mat-card-header>
+      <mat-card-title-group>
+        <mat-card-title> Mounthly Low Bollinger Band scenario</mat-card-title>
+        <!-- <mat-card-subtitle>Senario supplies asset prices on the low mounthly Bollinger Band </mat-card-subtitle> -->
+      </mat-card-title-group>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-expansion-panel hideToggle style="margin-top: 16px;">
+        <mat-expansion-panel-header>
+          <mat-panel-title> Scenario Description</mat-panel-title>
+        </mat-expansion-panel-header>
+         <h4>Scenario supplies asset prices on the low mounthly Bollinger Band, 
+        which is a technical analysis indicator that consists of a moving average and two standard deviation lines. 
+        The low Bollinger Band represents the lower boundary of the price range, 
+        and when asset prices are near or below this band, 
+        it may indicate that the asset is oversold and could potentially experience a price rebound. 
+        </h4>
+      </mat-expansion-panel>
+      <div style="display: grid; margin-top: 16px; grid-template-columns: auto 1fr; gap: 8px 16px; align-items: baseline;">
+        <span>Scenario health factor:</span>
+        <span [class.negative]="marketStatus!.monthlyBBScenario!.healthFactor <= 1" 
+              [class.positive]="marketStatus!.monthlyBBScenario!.healthFactor > 1">
+          {{marketStatus!.monthlyBBScenario!.healthFactor | number:'1.2-2'}}
+        </span>
+
+        <span>Maximum borrow capacity:<br><span style="font-size: smaller;">(health factor : 1.2)</span></span>
+        <span>{{marketStatus!.monthlyBBScenario!.maximumBorrowPower | currency}}</span>
+        
+        <span>Remaining secure borrowing capacity:<br><span style="font-size: smaller;">(health factor : 1.2)</span></span>
+        <span>{{
+          ((marketStatus!.monthlyBBScenario!.maximumBorrowPower - marketStatus!.totalBorrowsUSD) >= 0 ? 
+          (marketStatus!.monthlyBBScenario!.maximumBorrowPower - marketStatus!.totalBorrowsUSD) :
+           0) | currency}}</span>
+
+        <span>Add to borrow:</span>
+        <mat-slider min="marketStatus?.totalBorrowsUSD" max="{{marketStatus!.monthlyBBScenario!.maximumBorrowPower}}" step="0.5">
+          <input matSliderThumb [(ngModel)]="editBorrowUSD" #slider>
+        </mat-slider>
+
+        <span>Borrow amount:</span>
+        <span>{{editBorrowUSD | currency}}</span>
+        
+
+        <span>Maximum borrow at liquidation:<br><span style="font-size: smaller;">(health factor : 1)</span></span>
+        <span>{{marketStatus!.monthlyBBScenario!.liquidationBorrowPower| currency}}</span>
+      </div>
+      <mat-grid-list cols="3" rowHeight="100px" gutterSize="8px" style="margin-top: 16px;">
+      @for (reserve of marketStatus!.monthlyBBScenario.reserveStatusList; track reserve) {
+        <mat-grid-tile style="border: 1px solid #ccc; border-radius: 4px;">
+          <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: baseline; width: 100%; padding: 8px;">
+            <h4 style="grid-column: 1 / -1; margin: 0 0 8px 0;">
+              <img [src]="getReservesInfo(reserve.underlyingAsset)?.imageUrl"  class="token-logo">
+              {{reserve.name}}
+            </h4>
+
+            <span>Provided amount:</span>
+            <span>{{reserve.underlyingBalance | number:'1.2-4'}} {{reserve.symbol}}</span>
+
+            <span>Scenario Low price:</span>
+            <span>{{reserve.monthlyBB?.lower| currency}}</span>
+          </div>
+        </mat-grid-tile>
+      }
+      </mat-grid-list>
+    </mat-card-content>
+  </mat-card>
+  }
+  <br>
+
   <div echarts [options]="options" class="chart-container"></div>
 </div>
