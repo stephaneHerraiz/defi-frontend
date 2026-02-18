@@ -7,13 +7,13 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN npm ci
+RUN yarn install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build the Angular application for production
-RUN npm run build
+RUN yarn run build
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
