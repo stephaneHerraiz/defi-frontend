@@ -1,5 +1,5 @@
 
-export interface AaveMarketInterface {
+export interface UserChainInterface {
 
     chain: string;
 

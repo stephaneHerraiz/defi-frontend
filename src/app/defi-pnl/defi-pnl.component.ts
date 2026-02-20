@@ -1,8 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {MatTableModule} from '@angular/material/table';
-import {MatSelectModule} from '@angular/material/select';
-import {MatFormFieldModule} from '@angular/material/form-field';
+import { TableModule } from 'primeng/table';
+import { SelectModule } from 'primeng/select';
+import { FormsModule } from '@angular/forms';
 import dayjs from 'dayjs';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../services/auth.service';
@@ -18,9 +18,9 @@ import { LifiChainInterface } from '../interfaces/lifi-chain.interface';
   imports: [
     CommonModule,
     WalletSelectionComponent,
-    MatTableModule,
-    MatSelectModule,
-    MatFormFieldModule
+    TableModule,
+    SelectModule,
+    FormsModule
   ],
   templateUrl: './defi-pnl.component.html',
   styleUrl: './defi-pnl.component.scss'

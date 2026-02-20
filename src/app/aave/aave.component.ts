@@ -2,26 +2,26 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { EChartsCoreOption, VisualMapComponentOption } from 'echarts';
 import * as echarts from 'echarts/core';
-import {MatGridListModule} from '@angular/material/grid-list';
-import {MatExpansionModule} from '@angular/material/expansion';
-import {MatSliderModule} from '@angular/material/slider';
 import { AaveMarketService } from '../services/aave-market.service';
 import { AaveMarketStatus, GetAaveMarketHistoryInterface } from '../interfaces/aave-market-status.interface';
 import { NgxEchartsModule } from 'ngx-echarts';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
+import { CardModule } from 'primeng/card';
+import { SelectModule } from 'primeng/select';
+import { AccordionModule } from 'primeng/accordion';
+import { SliderModule } from 'primeng/slider';
+import { PanelModule } from 'primeng/panel';
+import { SkeletonModule } from 'primeng/skeleton';
 import { WalletSelectionComponent } from '../wallet-selection/wallet-selection.component';
 import { AccountInterface } from '../interfaces/account.interface';
 import { AccountService } from '../services/account.service';
 import { forkJoin, map, mergeMap, Observable } from 'rxjs';
-import { AaveMarketInterface } from '../interfaces/aave-market.interface';
+import { UserChainInterface } from '../interfaces/user-chain.interface';
 import { AaveTransactionActions, AaveTransactionInterface } from '../interfaces/aave-transaction.interface';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { AuthService } from '../services/auth.service';
-import { UnderlyingToken } from '../interfaces/aave-market-reserve-info.interface';
+import { AaveMarketInterface, UnderlyingToken } from '../interfaces/aave-market-reserve-info.interface';
 dayjs.extend(utc);
 
 const COLORS = [ 'blue', 'green', 'orange', 'purple', 'pink', 'brown', 'gray', 'black', 'yellow' ];
@@ -100,15 +100,15 @@ const DEFAULT_OPTIONS: EChartsCoreOption = {
   imports: [
     CommonModule,
     NgxEchartsModule,
-    MatSelectModule,
-    MatFormFieldModule,
+    SelectModule,
     FormsModule,
     ReactiveFormsModule,
     WalletSelectionComponent,
-    MatCardModule,
-    MatGridListModule,
-    MatExpansionModule,
-    MatSliderModule,
+    CardModule,
+    AccordionModule,
+    SliderModule,
+    PanelModule,
+    SkeletonModule,
   ],
   templateUrl: './aave.component.html',
   styleUrl: './aave.component.scss'
@@ -116,16 +116,17 @@ const DEFAULT_OPTIONS: EChartsCoreOption = {
 export class AaveComponent implements OnInit {
   public options: EChartsCoreOption = DEFAULT_OPTIONS;
   accounts: AccountInterface[] = [];
-  markets: AaveMarketInterface[] = [];
+  userChains: UserChainInterface[] = [];
   selectedAccount: AccountInterface | null = null;
-  selectedMarkets: AaveMarketInterface[] = [];
+  selectedUserChain: UserChainInterface[] = [];
   marketStatus: AaveMarketStatus | null = null;
   reservesInfo: UnderlyingToken[] = [];
-  editBorrowUSD = 0;
+  customBorrowUSD = 0;
   
   private aaveMarketService = inject(AaveMarketService);
   private accountService = inject(AccountService);
   private authService = inject(AuthService);
+  selectedMarket: AaveMarketInterface | null = null;
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
@@ -144,9 +145,9 @@ export class AaveComponent implements OnInit {
 
   private resetData() {
     this.accounts = [];
-    this.markets = [];
+    this.userChains = [];
     this.selectedAccount = null;
-    this.selectedMarkets = [];
+    this.selectedUserChain = [];
     this.updateChart();
   }
 
@@ -156,11 +157,12 @@ export class AaveComponent implements OnInit {
         mergeMap((accounts: AccountInterface[]) => {
           this.accounts = accounts;
           this.selectedAccount = this.accounts[0];
+          this.customBorrowUSD = this.marketStatus?.totalBorrowsUSD || 0;
           return this.aaveMarketService.getMarkets();
         }),
       )
-      .subscribe((markets: AaveMarketInterface[]) => {
-        this.markets = markets;
+      .subscribe((markets: UserChainInterface[]) => {
+        this.userChains = markets;
         this.updateChart();
       });
   }
@@ -175,11 +177,12 @@ export class AaveComponent implements OnInit {
     this.getMarketStatus();
   }
 
-  selectMarket(event: any) {
-    this.selectedMarkets = [];
-    this.selectedMarkets.push(event.value);
-    this.aaveMarketService.getMarketReservesInfo(event.value.chainid).subscribe((reserves) => {
-      this.reservesInfo = reserves;
+  selectChain(event: any) {
+      this.selectedUserChain = [];
+    this.selectedUserChain.push(event.value);
+    this.aaveMarketService.getMarket(event.value.chainid, this.selectedAccount?.address || '').subscribe((market) => {
+      this.reservesInfo = market.reserves;
+      this.selectedMarket = market;
     });
     try {
       this.updateChart();
@@ -190,14 +193,14 @@ export class AaveComponent implements OnInit {
   }
 
   getMarketStatus() {
-    if (!this.selectedAccount || this.selectedMarkets.length === 0) {
+    if (!this.selectedAccount || this.selectedUserChain.length === 0) {
       return;
     }
     const userAddress = this.authService.getUserAddress();
     if(!userAddress) {
       return;
     }
-    this.aaveMarketService.getMarketStatus(this.selectedAccount.address, userAddress, this.selectedMarkets[0].chain)
+    this.aaveMarketService.getMarketStatus(this.selectedAccount.address, userAddress, this.selectedUserChain[0].chain)
       .subscribe((marketStatus: AaveMarketStatus) => {
         this.marketStatus = marketStatus;
       });
@@ -207,8 +210,14 @@ export class AaveComponent implements OnInit {
     return this.reservesInfo.find((reserve) => reserve.address.toLowerCase() === tokenAddress.toLowerCase());
   }
 
+  editBorrowAmount(event: any) {
+    this.customBorrowUSD= event.value;
+
+  }
+
+
   updateChart() {
-    if (this.selectedMarkets.length === 0) {
+    if (this.selectedUserChain.length === 0) {
       this.options = {
         ...this.options,
         series: [],
@@ -217,7 +226,7 @@ export class AaveComponent implements OnInit {
     }
 
     const getMarketPromise: Observable<GetAaveMarketHistoryInterface>[] = [];
-    this.selectedMarkets.forEach((market: AaveMarketInterface) => {
+    this.selectedUserChain.forEach((market: UserChainInterface) => {
       getMarketPromise.push(this.aaveMarketService.get(this.selectedAccount?.address, market.chain));
     });
     
@@ -347,7 +356,7 @@ export class AaveComponent implements OnInit {
   }
 
   private addAaveHistorySerie() {
-    return this.aaveMarketService.getTransactions(this.selectedAccount?.address, this.selectedMarkets[0].chain)
+    return this.aaveMarketService.getTransactions(this.selectedAccount?.address, this.selectedUserChain[0].chain)
       .pipe(
         map((transactions: AaveTransactionInterface[]) => {
           return {

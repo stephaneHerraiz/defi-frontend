@@ -1,36 +1,13 @@
-/* You can add global styles to this file, and also import other style files */
-@use '@angular/material' as mat;
-
-@include mat.elevation-classes();
-@include mat.app-background();
+/* Global styles for PrimeNG */
+@import 'primeicons/primeicons.css';
 
 html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
-
-// Customize the entire app. Change :root to your selector if you want to scope the styles.
-:root {
-  @include mat.select-overrides((
-    panel-background-color: white,
-  ));
+body {
+  margin: 0; 
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-// Make form fields transparent to match app background
-mat-form-field {
-  background-color: var(--mat-app-background);
-}
-
-mat-form-field .mat-mdc-text-field-wrapper {
-  background-color: var(--mat-app-background) !important;
-}
-
-mat-form-field.mat-mdc-form-field {
-  .mat-mdc-text-field-wrapper {
-    background-color: var(--mat-app-background);
-  }
-}
-
-mat-form-field.mat-form-field-appearance-outline {
-  .mat-mdc-form-field-flex {
-    background-color: var(--mat-app-background);
-  }
+/* Add border to p-card for better visibility in dark mode */
+.p-card {
+  border: 1px solid var(--p-content-border-color);
 }

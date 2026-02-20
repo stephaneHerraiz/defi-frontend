@@ -2,10 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { AaveMarketHistoryInterface, AaveMarketStatus, GetAaveMarketHistoryInterface } from '../interfaces/aave-market-status.interface';
-import { AaveMarketInterface } from '../interfaces/aave-market.interface';
+import { UserChainInterface } from '../interfaces/user-chain.interface';
 import { AaveTransactionInterface } from '../interfaces/aave-transaction.interface';
-import { GET_MARKETS_RESERVES_INFO } from '../gql/getMarketsReservesInfo.gql';
-import { MarketsReservesInfo, UnderlyingToken } from '../interfaces/aave-market-reserve-info.interface';
+import { GET_MARKET } from '../gql/getMarket.gql';
+import { AaveGetMarketsInterface, AaveMarketInterface } from '../interfaces/aave-market-reserve-info.interface';
 import { Apollo } from 'apollo-angular';
 
 
@@ -54,8 +54,8 @@ export class AaveMarketService {
     );
   }
 
-  getMarkets(): Observable<AaveMarketInterface[]> {
-    return this.http.get<AaveMarketInterface[]>('aavemarkets/markets');
+  getMarkets(): Observable<UserChainInterface[]> {
+    return this.http.get<UserChainInterface[]>('aavemarkets/markets');
   }
 
   getMarketStatus(accountAddress: string, address: string, marketChain: string): Observable<AaveMarketStatus> {
@@ -69,16 +69,29 @@ export class AaveMarketService {
     });
   }
 
-  getMarketReservesInfo(chainId: number): Observable<UnderlyingToken[]> {
-    return this.apollo.query<MarketsReservesInfo>({
-      query: GET_MARKETS_RESERVES_INFO,
-      variables: { request: { chainIds: [chainId] } },
+  getMarket(chainId: number, accountAddress: string): Observable<AaveMarketInterface> {
+    return this.apollo.query<AaveGetMarketsInterface>({
+      query: GET_MARKET,
+      variables: { request: { 
+        chainIds: [chainId],
+        user: accountAddress.toLowerCase(),
+      }},
     }).pipe(
       map((result) => {
         if (!result || !result.data || !result.data.markets || result.data.markets.length === 0) {
           throw new Error('No markets found for the given chainId');
         }
-        return result?.data?.markets[0].reserves.map((reserve) => reserve.underlyingToken);
+        return {
+          name:result.data.markets[0].name,
+          address: result.data.markets[0].address,
+          icon: result.data.markets[0].icon,
+          reserves: result.data.markets[0].reserves.map(reserve => reserve.underlyingToken),
+          ...result.data.markets[0].userState,
+          currentLiquidationThreshold: result.data.markets[0].userState.currentLiquidationThreshold.value,
+          netAPY: result.data.markets[0].userState.netAPY.value,
+          userDebtAPY: result.data.markets[0].userState.userDebtAPY.value,
+          userEarnedAPY: result.data.markets[0].userState.userEarnedAPY.value,
+        } as AaveMarketInterface;
       }),
       catchError((error) => {
         throw new Error(

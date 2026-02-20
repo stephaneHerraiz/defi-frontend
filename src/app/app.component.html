@@ -1,47 +1,36 @@
-<mat-toolbar color="primary">
-  <button mat-icon-button class="toolbar-icon" aria-label="">
-    <mat-icon>menu</mat-icon>
-  </button>
-  <span>DEFI overview</span>
-  <span class="toolbar-spacer"></span>
-  <button mat-icon-button class="toolbar-icon" [matMenuTriggerFor]="menu" aria-label="{{userAddress || 'No account selected'}}">
-    <mat-icon>account_circle</mat-icon>
-  </button>
-  <mat-menu #menu="matMenu">
-  
-    @if (!isAuthenticated) {
-      <button mat-menu-item>
-        <mat-icon>login</mat-icon>
-        <span (click)="login()">Connect</span>
-      </button>
-    }
-    @else {
-      <button mat-menu-item>
-        <mat-icon>logout</mat-icon>
-        <span (click)="logout()">Disconnect</span>
-      </button>
-    }
-</mat-menu>
-  <button mat-icon-button class="example-icon" aria-label="Example icon-button with share icon">
-    <mat-icon>share</mat-icon>
-  </button>
-</mat-toolbar>
+<p-toolbar styleClass="toolbar">
+  <ng-template #start>
+    <p-button icon="pi pi-bars" [text]="true" (click)="sidebarVisible = !sidebarVisible" />
+    <span class="toolbar-title">DEFI overview</span>
+  </ng-template>
+  <ng-template #end>
+    <p-button icon="pi pi-user" [text]="true" (click)="menu.toggle($event)" [label]="(userAddress || '' | slice:0:9) + '...'" />
+    <p-menu #menu [model]="menuItems" [popup]="true" />
+    <p-button icon="pi pi-share-alt" [text]="true" />
+  </ng-template>
+</p-toolbar>
 
-<mat-sidenav-container class="sidenav-container">
-  <mat-sidenav mode="side" opened class="sidenav">
-    <mat-nav-list>
-      <a mat-list-item routerLink="/aave" routerLinkActive="active">
-        <mat-icon matListItemIcon>analytics</mat-icon>
-        <span matListItemTitle>AAVE Overview</span>
-      </a>
-      <a mat-list-item routerLink="/pnl" routerLinkActive="active">
-        <mat-icon matListItemIcon>account_balance_wallet</mat-icon>
-        <span matListItemTitle>Profit & Loss</span>
-      </a>
-    </mat-nav-list>
-  </mat-sidenav>
+<div class="layout-container">
+  @if (sidebarVisible) {
+    <aside class="sidenav">
+      <ul class="nav-list">
+        <li>
+          <a routerLink="/aave" routerLinkActive="active" class="nav-item">
+            <i class="pi pi-chart-line"></i>
+            <span>AAVE Overview</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/pnl" routerLinkActive="active" class="nav-item">
+            <i class="pi pi-wallet"></i>
+            <span>Profit & Loss</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+  }
   
-  <mat-sidenav-content class="sidenav-content">
+  <div class="main-content">
     <router-outlet />
-  </mat-sidenav-content>
-</mat-sidenav-container>
+  </div>
+</div>

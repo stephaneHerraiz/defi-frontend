@@ -3,11 +3,11 @@
   
   h2 {
     margin-bottom: 16px;
-    color: #333;
+    color: #cacaca;
   }
 
   p {
-    color: #666;
+    color: #949494;
     margin-bottom: 24px;
   }
 }
@@ -15,7 +15,7 @@
 .selectors-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   gap: 16px;
   margin-bottom: 16px;
 
@@ -24,17 +24,22 @@
   }
 }
 
+.field-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .pnl-content {
   margin-top: 32px;
   padding: 24px;
-  background: #f5f5f5;
   border-radius: 8px;
   min-height: 400px;
 
   h3 {
     margin-top: 32px;
     margin-bottom: 16px;
-    color: #333;
+    color: #cacaca;
   }
 
   table {

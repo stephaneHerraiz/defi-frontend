@@ -1,4 +1,4 @@
-import { AaveMarketInterface } from "./aave-market.interface";
+import { UserChainInterface } from "./user-chain.interface";
 import { AccountInterface } from "./account.interface";
 
 export interface AaveMarketHistoryInterface {

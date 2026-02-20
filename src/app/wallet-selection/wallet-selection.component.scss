@@ -2,6 +2,8 @@
   display: block;
 }
 
-mat-form-field {
-  width: 300px;
+.select-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }

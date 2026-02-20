@@ -27,13 +27,11 @@ echarts.use([
   MarkPointComponent,
   CustomChart]);
 
-import {MatButtonModule} from '@angular/material/button';
-import {MatIconModule} from '@angular/material/icon';
-import {MatToolbarModule} from '@angular/material/toolbar';
-import {MatMenuModule} from '@angular/material/menu';
-import {MatSidenavModule} from '@angular/material/sidenav';
-import {MatListModule} from '@angular/material/list';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ButtonModule } from 'primeng/button';
+import { MenuModule } from 'primeng/menu';
 import { AuthService } from './services/auth.service';
+import { MenuItem } from 'primeng/api';
 
 @Component({
   selector: 'app-root',
@@ -41,12 +39,9 @@ import { AuthService } from './services/auth.service';
   imports: [
     CommonModule,
     RouterModule, 
-    MatButtonModule,
-    MatIconModule,
-    MatToolbarModule,
-    MatMenuModule,
-    MatSidenavModule,
-    MatListModule,
+    ToolbarModule,
+    ButtonModule,
+    MenuModule,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -57,6 +52,8 @@ import { AuthService } from './services/auth.service';
 export class AppComponent implements OnInit  {
   isAuthenticated = false;
   userAddress: string | null = null;
+  sidebarVisible = true;
+  menuItems: MenuItem[] = [];
 
   constructor(private authService: AuthService) {}
   
@@ -64,11 +61,34 @@ export class AppComponent implements OnInit  {
     // Subscribe to unauthorized events
     this.authService.unauthorized$.subscribe(() => {
       this.isAuthenticated = false;
+      this.updateMenuItems();
     });
 
     if(this.authService.isAuthenticated()) {
       this.isAuthenticated = true;
       this.userAddress = this.authService.getUserAddress();
+    }
+    
+    this.updateMenuItems();
+  }
+
+  updateMenuItems(): void {
+    if (!this.isAuthenticated) {
+      this.menuItems = [
+        {
+          label: 'Connect',
+          icon: 'pi pi-sign-in',
+          command: () => this.login()
+        }
+      ];
+    } else {
+      this.menuItems = [
+        {
+          label: 'Disconnect',
+          icon: 'pi pi-sign-out',
+          command: () => this.logout()
+        }
+      ];
     }
   }
 
@@ -77,6 +97,7 @@ export class AppComponent implements OnInit  {
       complete: () => {
         this.isAuthenticated = true;
         this.userAddress = this.authService.getUserAddress();
+        this.updateMenuItems();
       },
       error: (err) => {
         console.log(err);
@@ -89,6 +110,7 @@ export class AppComponent implements OnInit  {
     this.authService.logout();
     this.isAuthenticated = false;
     this.userAddress = null;
+    this.updateMenuItems();
   }
 
 }

@@ -6,95 +6,74 @@
         [selectedAccount]="selectedAccount"
         (accountChange)="selectAccount($event)">
         </app-wallet-selection>
-        <mat-form-field class="year-selector">
-            <mat-label>Year</mat-label>
-            <mat-select [(value)]="selectedYear" (selectionChange)="selectYear($event)">
-                @for (year of availableYears; track year) {
-                    <mat-option [value]="year">{{year}}</mat-option>
-                }
-            </mat-select>
-        </mat-form-field>
+        <div class="field-wrapper year-selector">
+            <label for="year">Year</label>
+            <p-select id="year" [options]="availableYears" [(ngModel)]="selectedYear" (onChange)="selectYear($event)" />
+        </div>
     </div>
     <div class="pnl-content">
-    <table mat-table [dataSource]="tokensBought" class="mat-elevation-z8">
-
-    <ng-container matColumnDef="token">
-        <th mat-header-cell *matHeaderCellDef> Token </th>
-        <td mat-cell *matCellDef="let element"> {{element.token.symbol}} </td>
-        <td mat-footer-cell *matFooterCellDef></td>
-    </ng-container>
-
-    <ng-container matColumnDef="amount">
-        <th mat-header-cell *matHeaderCellDef> Amount bought  </th>
-        <td mat-cell *matCellDef="let element"> {{element.totalBought | number:'1.0-2'}} </td>
-        <td mat-footer-cell *matFooterCellDef></td>
-    </ng-container>
-
-    <ng-container matColumnDef="usd">
-        <th mat-header-cell *matHeaderCellDef> USD Bought </th>
-        <td mat-cell *matCellDef="let element"> {{element.totalBoughtUSD| number:'1.0-2'}}$ </td>
-        <td mat-footer-cell *matFooterCellDef> Total PnL </td>
-    </ng-container>
-
-    <ng-container matColumnDef="pnl">
-        <th mat-header-cell *matHeaderCellDef> Current PnL </th>
-        <td mat-cell *matCellDef="let element" [class.negative]="element.pnl < 0" [class.positive]="element.pnl > 0"> {{element.pnl | number:'1.0-2'}}$ </td>
-        <td mat-footer-cell *matFooterCellDef [class.negative]="totalPnl < 0" [class.positive]="totalPnl > 0"> {{totalPnl | number:'1.0-2'}}$ </td>
-    </ng-container>
-
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    <tr mat-footer-row *matFooterRowDef="displayedColumns"></tr>
-    </table>
+    <p-table [value]="tokensBought" styleClass="p-datatable-striped">
+        <ng-template #header>
+            <tr>
+                <th>Token</th>
+                <th>Amount bought</th>
+                <th>USD Bought</th>
+                <th>Current PnL</th>
+            </tr>
+        </ng-template>
+        <ng-template #body let-element>
+            <tr>
+                <td>{{element.token.symbol}}</td>
+                <td>{{element.totalBought | number:'1.0-2'}}</td>
+                <td>{{element.totalBoughtUSD | number:'1.0-2'}}$</td>
+                <td [class.negative]="element.pnl < 0" [class.positive]="element.pnl > 0">{{element.pnl | number:'1.0-2'}}$</td>
+            </tr>
+        </ng-template>
+        <ng-template #footer>
+            <tr>
+                <td></td>
+                <td></td>
+                <td>Total PnL</td>
+                <td [class.negative]="totalPnl < 0" [class.positive]="totalPnl > 0">{{totalPnl | number:'1.0-2'}}$</td>
+            </tr>
+        </ng-template>
+    </p-table>
 
     <h3>Transactions</h3>
-    <table mat-table [dataSource]="transactions || []" class="mat-elevation-z8">
-
-    <ng-container matColumnDef="date">
-        <th mat-header-cell *matHeaderCellDef> Date </th>
-        <td mat-cell *matCellDef="let element"> {{element.receiving.timestamp * 1000 | date:'medium'}} </td>
-    </ng-container>
-
-    <ng-container matColumnDef="tokenReceived">
-        <th mat-header-cell *matHeaderCellDef> Token Received </th>
-        <td mat-cell *matCellDef="let element">
-            <div class="token-cell">
-                <img [src]="getChain(element.receiving.chainId)?.logoURI" [alt]="element.receiving.token.symbol" [title]="element.receiving.token.symbol" class="token-logo">
-                <img [src]="element.receiving.token.logoURI" 
-                [alt]="element.receiving.token.symbol" [title]="element.receiving.token.symbol" class="token-logo">
-            </div>
-        </td>
-    </ng-container>
-
-    <ng-container matColumnDef="tokenSent">
-        <th mat-header-cell *matHeaderCellDef> Token Sent </th>
-        <td mat-cell *matCellDef="let element">
-            <div class="token-cell">
-                <img [src]="getChain(element.sending.chainId)?.logoURI" [alt]="element.sending.token.symbol" [title]="element.sending.token.name" class="token-logo">
-                <img [src]="element.sending.token.logoURI" 
-                    [alt]="element.sending.token.symbol" [title]="element.sending.token.symbol" class="token-logo">
-            </div>
-        </td>
-    </ng-container>
-
-    <ng-container matColumnDef="amountReceived">
-        <th mat-header-cell *matHeaderCellDef> Amount Received </th>
-        <td mat-cell *matCellDef="let element"> {{element.receiving.amount | number:'1.0-4'}} </td>
-    </ng-container>
-
-    <ng-container matColumnDef="amountUsdReceived">
-        <th mat-header-cell *matHeaderCellDef> Amount USD Received </th>
-        <td mat-cell *matCellDef="let element"> {{element.receiving.amountUSD | number:'1.0-2'}}$ </td>
-    </ng-container>
-
-    <ng-container matColumnDef="tokenReceivedPrice">
-        <th mat-header-cell *matHeaderCellDef> Token Received Price </th>
-        <td mat-cell *matCellDef="let element"> {{element.receiving.token.priceUSD | number:'1.0-2'}}$ </td>
-    </ng-container>
-
-    <tr mat-header-row *matHeaderRowDef="displayedTransactionColumns"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedTransactionColumns;"></tr>
-    </table>
+    <p-table [value]="transactions || []" styleClass="p-datatable-striped">
+        <ng-template #header>
+            <tr>
+                <th>Date</th>
+                <th>Token Received</th>
+                <th>Token Sent</th>
+                <th>Amount Received</th>
+                <th>Amount USD Received</th>
+                <th>Token Received Price</th>
+            </tr>
+        </ng-template>
+        <ng-template #body let-element>
+            <tr>
+                <td>{{element.receiving.timestamp * 1000 | date:'medium'}}</td>
+                <td>
+                    <div class="token-cell">
+                        <img [src]="getChain(element.receiving.chainId)?.logoURI" [alt]="element.receiving.token.symbol" [title]="element.receiving.token.symbol" class="token-logo">
+                        <img [src]="element.receiving.token.logoURI" 
+                        [alt]="element.receiving.token.symbol" [title]="element.receiving.token.symbol" class="token-logo">
+                    </div>
+                </td>
+                <td>
+                    <div class="token-cell">
+                        <img [src]="getChain(element.sending.chainId)?.logoURI" [alt]="element.sending.token.symbol" [title]="element.sending.token.name" class="token-logo">
+                        <img [src]="element.sending.token.logoURI" 
+                            [alt]="element.sending.token.symbol" [title]="element.sending.token.symbol" class="token-logo">
+                    </div>
+                </td>
+                <td>{{element.receiving.amount | number:'1.0-4'}}</td>
+                <td>{{element.receiving.amountUSD | number:'1.0-2'}}$</td>
+                <td>{{element.receiving.token.priceUSD | number:'1.0-2'}}$</td>
+            </tr>
+        </ng-template>
+    </p-table>
 
   </div>
 </div>

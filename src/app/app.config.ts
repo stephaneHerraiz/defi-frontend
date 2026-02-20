@@ -5,6 +5,8 @@ import { provideApollo } from 'apollo-angular';
 import { HttpLink } from 'apollo-angular/http';
 import { InMemoryCache } from '@apollo/client/core';
 import { inject } from '@angular/core';
+import { providePrimeNG } from 'primeng/config';
+import Aura from '@primeuix/themes/aura';
 
 import { environment } from '../environments/environment';
 
@@ -15,6 +17,11 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }), 
     provideRouter(routes),
+    providePrimeNG({
+      theme: {
+        preset: Aura
+      }
+    }),
     {
       provide: HTTP_INTERCEPTORS,
       useClass: BaseUrlInterceptor,

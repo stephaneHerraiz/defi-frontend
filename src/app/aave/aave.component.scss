@@ -8,6 +8,17 @@
   margin-bottom: 8px;
 }
 
+.field-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fit-content {
+  display: inline-block;
+  margin: 1rem 0;
+}
+
 .negative {
   color: #d32f2f;
   font-weight: 500;
@@ -22,5 +33,19 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.grid-tile {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
 }
 
