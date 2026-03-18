@@ -9,6 +9,11 @@
     "test": "ng test"
   },
   "private": true,
+  "release-it": {
+    "npm": {
+      "publish": false
+    }
+  },
   "dependencies": {
     "@angular/cdk": "^21.1.5",
     "@angular/common": "^21.1.0",
@@ -29,6 +34,7 @@
     "ngx-echarts": "^19.0.0",
     "primeicons": "^7.0.0",
     "primeng": "^21.1.1",
+    "release-it": "^19.2.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
