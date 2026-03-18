@@ -8,13 +8,13 @@
     <div class="field-wrapper">
       <p-select id="markets"
         [options]="userChains"
-        optionLabel="chain"
+        optionLabel="name"
         (onChange)="selectChain($event)"
         placeholder="Select a market" 
       />
     </div>
   </div>
-   @if(marketStatus?.monthlyBBScenario) {
+   @if(portfolioRiskResult) {
 
   <div style="display: flex; align-items: center; gap: 16px;">
     <div class="card fit-content">
@@ -40,64 +40,128 @@
         </p-panel>
     </div>
   </div>
-
-  <p-card class="scenario-card" header="Monthly Low Bollinger Band scenario">
+  <p-card class="scenario-card" header="Portfolio Risk Analysis">
     <p-accordion>
       <p-accordion-panel value="0">
-        <p-accordion-header>Scenario Description</p-accordion-header>
+        <p-accordion-header>Calculation description</p-accordion-header>
         <p-accordion-content>
-          <h4>Scenario supplies asset prices on the low monthly Bollinger Band, 
-          which is a technical analysis indicator that consists of a moving average and two standard deviation lines. 
-          The low Bollinger Band represents the lower boundary of the price range, 
-          and when asset prices are near or below this band, 
-          it may indicate that the asset is oversold and could potentially experience a price rebound. 
-          </h4>
+          <div class="methodology">
+            <h3>1. Daily Returns</h3>
+            <p>For each asset in the portfolio, we compute daily returns from historical closing prices over the last 365 days:</p>
+            <div class="formula">r<sub>t</sub> = (P<sub>t</sub> - P<sub>t-1</sub>) / P<sub>t-1</sub></div>
+            <p>Where P<sub>t</sub> is the closing price at day t.</p>
+
+            <hr>
+
+            <h3>2. EWMA Volatility (Exponentially Weighted Moving Average)</h3>
+            <p>Traditional volatility treats all historical days equally. EWMA gives <strong>more weight to recent days</strong>, making it more reactive to current market conditions. We use the RiskMetrics standard with &lambda; = 0.94:</p>
+            <div class="formula">&sigma;<sub>t</sub><sup>2</sup> = &lambda; &middot; &sigma;<sub>t-1</sub><sup>2</sup> + (1 - &lambda;) &middot; r<sub>t</sub><sup>2</sup></div>
+            <div class="formula">&sigma;<sub>EWMA</sub> = &radic;&sigma;<sub>t</sub><sup>2</sup></div>
+            <p>Where:</p>
+            <ul>
+              <li><strong>&lambda; = 0.94</strong> — decay factor (94% of the previous variance is carried forward)</li>
+              <li><strong>r<sub>t</sub></strong> — daily return at day t</li>
+              <li>The initial seed &sigma;<sub>0</sub><sup>2</sup> is the full-sample variance</li>
+            </ul>
+            <p><em>If a crash happened last week, EWMA volatility will be significantly higher than a simple standard deviation that averages it over the whole year.</em></p>
+
+            <hr>
+
+            <h3>3. Stressed Correlation</h3>
+            <p>Standard correlations are computed over all market conditions, including calm periods. However, during market crashes, correlations between crypto assets <strong>spike toward 1</strong> — assets that seemed uncorrelated suddenly drop together.</p>
+            <p>To capture this, we compute correlation <strong>only on the worst 10% of trading days</strong> for the target asset:</p>
+            <div class="formula">&rho;<sub>stressed</sub>(A, B) = Pearson(r<sub>A</sub><sup>stress</sup>, r<sub>B</sub><sup>stress</sup>)</div>
+            <p>Where r<sup>stress</sup> contains only the returns from the worst 10% of days (sorted by most negative returns of asset A).</p>
+            <p>The Pearson correlation formula:</p>
+            <div class="formula">&rho;(A, B) = &sum;(r<sub>A,i</sub> - r&#772;<sub>A</sub>)(r<sub>B,i</sub> - r&#772;<sub>B</sub>) / &radic;[&sum;(r<sub>A,i</sub> - r&#772;<sub>A</sub>)<sup>2</sup> &middot; &sum;(r<sub>B,i</sub> - r&#772;<sub>B</sub>)<sup>2</sup>]</div>
+            <p><em>This gives a conservative, crisis-period estimate of how assets move together — exactly when it matters most for liquidation risk.</em></p>
+
+            <hr>
+
+            <h3>4. Systemic Liquidation Price (per asset)</h3>
+            <p>AAVE triggers liquidation when the <strong>Health Factor</strong> drops below a target (default = 1):</p>
+            <div class="formula">HF = &sum;(Q<sub>i</sub> &middot; P<sub>i</sub> &middot; LT<sub>i</sub>) / D</div>
+            <p>Where:</p>
+            <ul>
+              <li><strong>Q<sub>i</sub></strong> — quantity of asset i</li>
+              <li><strong>P<sub>i</sub></strong> — current price of asset i</li>
+              <li><strong>LT<sub>i</sub></strong> — liquidation threshold of asset i (set by AAVE governance)</li>
+              <li><strong>D</strong> — total debt</li>
+            </ul>
+            <p>The systemic liquidation price answers: <em>"At what price of asset A would the entire portfolio reach the target Health Factor, assuming all other assets co-move according to their Beta?"</em></p>
+
+            <h5>Step A — Total Current Collateral</h5>
+            <div class="formula">C<sub>total</sub> = &sum; Q<sub>i</sub> &middot; P<sub>i</sub> &middot; LT<sub>i</sub></div>
+
+            <h5>Step B — Beta-Weighted Collateral</h5>
+            <p>For each target asset A, we compute how much collateral would move if A drops:</p>
+            <div class="formula">&beta;<sub>B&rarr;A</sub> = &rho;<sub>stressed</sub>(A, B) &middot; &sigma;<sub>EWMA,B</sub> / &sigma;<sub>EWMA,A</sub></div>
+            <p>Beta answers: <em>"If asset A drops by 1%, asset B drops by &beta;%"</em></p>
+            <div class="formula">C<sub>beta</sub><sup>A</sup> = &sum; C<sub>i</sub> &middot; &beta;<sub>i&rarr;A</sub></div>
+            <p>Where C<sub>i</sub> = Q<sub>i</sub> &middot; P<sub>i</sub> &middot; LT<sub>i</sub> and &beta;<sub>A&rarr;A</sub> = 1 (an asset is perfectly correlated with itself).</p>
+
+            <h5>Step C — Liquidation Price</h5>
+            <div class="formula">Drop<sub>required</sub> = (C<sub>total</sub> - D &middot; HF<sub>target</sub>) / C<sub>beta</sub><sup>A</sup></div>
+            <div class="formula">P<sub>liquidation</sub><sup>A</sup> = P<sub>A</sub> &middot; (1 - Drop<sub>required</sub>)</div>
+            <p><em>This is the price at which asset A would need to fall — accounting for all other portfolio assets falling proportionally via Beta — for AAVE to trigger liquidation on your position.</em></p>
+
+            <hr>
+
+            <h3>5. Portfolio Value at Risk (VaR)</h3>
+            <p>VaR estimates the <strong>maximum expected loss in a single day</strong> at a given confidence level. We use the parametric (variance-covariance) method with EWMA volatilities and stressed correlations.</p>
+
+            <h5>Portfolio Volatility</h5>
+            <div class="formula">&sigma;<sub>p</sub><sup>2</sup> = &sum;<sub>i</sub> &sum;<sub>j</sub> w<sub>i</sub> &middot; w<sub>j</sub> &middot; &sigma;<sub>EWMA,i</sub> &middot; &sigma;<sub>EWMA,j</sub> &middot; &rho;<sub>stressed</sub>(i, j)</div>
+            <p>Where w<sub>i</sub> = V<sub>i</sub> / V<sub>total</sub> is the weight of asset i in the portfolio by USD value.</p>
+
+            <h5>VaR Calculation</h5>
+            <div class="formula">VaR<sub>95%</sub> = V<sub>total</sub> &times; 1.645 &times; &sigma;<sub>p</sub></div>
+            <div class="formula">VaR<sub>99%</sub> = V<sub>total</sub> &times; 2.326 &times; &sigma;<sub>p</sub></div>
+            <p>Where:</p>
+            <ul>
+              <li><strong>V<sub>total</sub></strong> — total collateral value in USD</li>
+              <li><strong>1.645</strong> and <strong>2.326</strong> — z-scores from the standard normal distribution</li>
+            </ul>
+            <p><em><strong>VaR 95%:</strong> On 95% of days, your portfolio loss will not exceed this amount. Only 1 day out of 20 could be worse.</em></p>
+            <p><em><strong>VaR 99%:</strong> On 99% of days, your portfolio loss will not exceed this amount. Only 1 day out of 100 could be worse.</em></p>
+          </div>
         </p-accordion-content>
       </p-accordion-panel>
     </p-accordion>
     <div style="display: grid; margin-top: 16px; grid-template-columns: auto 1fr; gap: 8px 16px; align-items: baseline;">
-      <span>Scenario health factor:</span>
-      <span [class.negative]="marketStatus!.monthlyBBScenario!.healthFactor <= 1" 
-            [class.positive]="marketStatus!.monthlyBBScenario!.healthFactor > 1">
-        {{marketStatus!.monthlyBBScenario!.healthFactor | number:'1.2-2'}}
-      </span>
-
-      <span>Maximum borrow capacity:<br><span style="font-size: smaller;">(health factor : 1.2)</span></span>
-      <span>{{marketStatus!.monthlyBBScenario!.maximumBorrowPower | currency}}</span>
-      
-      <span>Remaining secure borrowing capacity:<br><span style="font-size: smaller;">(health factor : 1.2)</span></span>
+      <span>VaR 95% (1-day):</span>
       <span>{{
-        ((marketStatus!.monthlyBBScenario!.maximumBorrowPower - marketStatus!.totalBorrowsUSD) >= 0 ? 
-        (marketStatus!.monthlyBBScenario!.maximumBorrowPower - marketStatus!.totalBorrowsUSD) :
-         0) | currency}}</span>
-
-      <span>Add to borrow:</span>
-      <p-slider [(ngModel)]="customBorrowUSD" 
-        [min]="marketStatus?.totalBorrowsUSD || 0" 
-        [max]="marketStatus!.monthlyBBScenario!.maximumBorrowPower"
-      />
-
-      <span>New borrow amount:</span>
-      <span>{{customBorrowUSD | currency}}</span>
-      
-
-      <span>Maximum borrow at liquidation:<br><span style="font-size: smaller;">(health factor : 1)</span></span>
-      <span>{{marketStatus!.monthlyBBScenario!.liquidationBorrowPower| currency}}</span>
+        portfolioRiskResult.var95  | currency}}
+      </span>
+      <span>VaR 99% (1-day):</span>
+      <span>{{
+        portfolioRiskResult.var99  | currency}}
+      </span>
     </div>
     <div class="grid-container" style="margin-top: 16px;">
-    @for (reserve of marketStatus!.monthlyBBScenario.reserveStatusList; track reserve) {
+    @for (reserve of supplies; track reserve) {
       <div class="grid-tile">
         <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: baseline; width: 100%; padding: 8px;">
           <h4 style="grid-column: 1 / -1; margin: 0 0 8px 0;">
-            <img [src]="getReservesInfo(reserve.underlyingAsset)?.imageUrl"  class="token-logo">
-            {{reserve.name}}
+            <img [src]="reserve.currency.imageUrl"  class="token-logo">
+            {{reserve.currency.symbol}}
           </h4>
 
           <span>Provided amount:</span>
-          <span>{{reserve.underlyingBalance | number:'1.2-4'}} {{reserve.symbol}}</span>
+          <span>{{reserve.balance.amount.value| number:'1.2-4'}} {{reserve.currency.symbol}}</span>
 
-          <span>Scenario Low price:</span>
-          <span>{{reserve.monthlyBB?.lower| currency}}</span>
+          <span>liquidation price:</span>
+          @if(portfolioRiskResult.liquidationPrices[reserve.currency.address]?.error) {
+            <span> {{portfolioRiskResult.liquidationPrices[reserve.currency.address].error}}</span>
+          } @else {
+              <span>
+              {{
+                portfolioRiskResult.liquidationPrices[reserve.currency.address] != null
+                  ? (portfolioRiskResult.liquidationPrices[reserve.currency.address].price| currency)
+                  : '-'
+              }}
+            </span>
+          }
         </div>
       </div>
     }

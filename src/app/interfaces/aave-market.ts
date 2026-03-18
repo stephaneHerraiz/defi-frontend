@@ -2,7 +2,7 @@ export interface AaveMarketInterface extends AaveUserMarketInterface {
   name: string;
   address: string;
   icon: string;
-  reserves: UnderlyingToken[];
+  reserves: Reserve[];
 }
 
 export interface AaveGetMarketsInterface {
@@ -29,10 +29,17 @@ export interface AaveGetMarketsInterface {
         value: number;
       };
     }
-    reserves: {
-      underlyingToken: UnderlyingToken;
-    }[];
+    reserves: Reserve[];
   }[];
+}
+
+export interface Reserve {
+  underlyingToken: UnderlyingToken;
+  supplyInfo: {
+    liquidationThreshold: {
+      value: number;
+    }
+  }
 }
 
 export interface UnderlyingToken {
@@ -54,3 +61,50 @@ export interface AaveUserMarketInterface {
   availableBorrowsBase: number;
   currentLiquidationThreshold: number;
 };
+
+export interface GetAaveChainInterface {
+  chains: AaveChainInterface[];
+}
+
+export interface AaveChainInterface {
+  name: string;
+  chainId: number;
+  icon: string;
+}
+
+export interface AaveMarketHistoryInterface {
+
+    created_at: Date;
+
+    healthFactor: number;
+
+    totalBorrows: number
+
+    liquidationThreshold: number
+
+    account: string
+    
+    market: string
+
+}
+
+export interface GetAaveMarketHistoryInterface {
+
+    data : AaveMarketHistoryInterface[];
+
+    account?: string
+    
+    market?: string
+}
+
+export interface PortfolioRiskResultInterface {
+  liquidationPrices: Record<string, supplyLiquidationInterface>;
+  totalCollateralValue: string;
+  var95: string;
+  var99: string;
+}
+
+export interface supplyLiquidationInterface {
+  price: number;
+  error: string;
+}

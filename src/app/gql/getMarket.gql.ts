@@ -33,6 +33,11 @@ export const GET_MARKET = gql`
           decimals
           symbol
         }
+        supplyInfo {
+          liquidationThreshold {
+          value
+        }
+      }
       }
     }
   }

@@ -1,12 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, } from '@angular/core';
-import { catchError, map, Observable, of, tap } from 'rxjs';
-import { AaveMarketHistoryInterface, AaveMarketStatus, GetAaveMarketHistoryInterface } from '../interfaces/aave-market-status.interface';
-import { UserChainInterface } from '../interfaces/user-chain.interface';
+import { catchError, map, Observable} from 'rxjs';
+import { AaveUserBorrowsInterface, AaveUserSuppliesInterface } from '../interfaces/aave-user.interface';
 import { AaveTransactionInterface } from '../interfaces/aave-transaction.interface';
 import { GET_MARKET } from '../gql/getMarket.gql';
-import { AaveGetMarketsInterface, AaveMarketInterface } from '../interfaces/aave-market-reserve-info.interface';
+import { AaveChainInterface, AaveGetMarketsInterface, AaveMarketInterface, PortfolioRiskResultInterface, Reserve, GetAaveChainInterface } from '../interfaces/aave-market';
 import { Apollo } from 'apollo-angular';
+import { GET_USER_SUPPLIES } from '../gql/getUserSupplies.gql';
+import { GET_USER_BORROWS } from '../gql/getUserBorrows.gql';
+import { HistoricalPriceDataService } from './historical-price-data.service';
+import { GET_CHAINS } from '../gql/getChains.gql';
 
 
 @Injectable({
@@ -15,34 +18,14 @@ import { Apollo } from 'apollo-angular';
 export class AaveMarketService {
   private http = inject(HttpClient);
   private apollo = inject(Apollo);
+  private historicalPriceDataService = inject(HistoricalPriceDataService);
   
   constructor() { }
 
-  get(accountAddress?: string, marketChain?: string): Observable<GetAaveMarketHistoryInterface> {
+  getTransactions(accountAddress?: string): Observable<AaveTransactionInterface[]> {
     const params: any = {};
     if (accountAddress) {
       params['accountAddress'] = accountAddress;
-    }
-    if (marketChain) {
-      params['marketChain'] = marketChain;
-    }
-
-    return this.http.get<AaveMarketHistoryInterface[]>('aavemarkets', {
-      params,
-    }).pipe(
-      map((data: AaveMarketHistoryInterface[]) => {
-        return { data, account: accountAddress, market: marketChain };
-      })
-    );
-  }
-
-  getTransactions(accountAddress?: string, marketChain?: string): Observable<AaveTransactionInterface[]> {
-    const params: any = {};
-    if (accountAddress) {
-      params['accountAddress'] = accountAddress;
-    }
-    if (marketChain) {
-      params['marketChain'] = marketChain;
     }
 
     return this.http.get<AaveTransactionInterface[]>('aavemarkets/transactions', {
@@ -54,19 +37,38 @@ export class AaveMarketService {
     );
   }
 
-  getMarkets(): Observable<UserChainInterface[]> {
-    return this.http.get<UserChainInterface[]>('aavemarkets/markets');
+  getMarkets(): Observable<AaveChainInterface[]> {
+    return this.http.get<AaveChainInterface[]>('aavemarkets/markets');
   }
 
-  getMarketStatus(accountAddress: string, address: string, marketChain: string): Observable<AaveMarketStatus> {
+  getMarketRiskManagement(accountAddress: string, chain: AaveChainInterface, market: AaveMarketInterface): Observable<PortfolioRiskResultInterface> {
     const params: any = {
       accountAddress,
-      address,
-      marketChain,
+      marketChain: market.address,
+      chainId: chain.chainId,
     };
-    return this.http.get<AaveMarketStatus>('aavemarkets/status', {
+    return this.http.get<PortfolioRiskResultInterface>('aavemarkets/risk-management', {
       params,
     });
+  }
+
+  getChains(): Observable<AaveChainInterface[]> {
+    return  this.apollo.query<GetAaveChainInterface>({
+      query: GET_CHAINS,
+      variables: { filter: 'MAINNET_ONLY' },
+    }).pipe(
+      map((result) => {
+        if (!result || !result.data || !result.data.chains) {
+          throw new Error('No chains found');
+        }
+        return result.data.chains;
+      }),
+      catchError((error) => {
+        throw new Error(
+          `Error fetching chains from The Graph API. Please check your query and try again. ${error}`,
+        );
+      })
+    );
   }
 
   getMarket(chainId: number, accountAddress: string): Observable<AaveMarketInterface> {
@@ -85,8 +87,10 @@ export class AaveMarketService {
           name:result.data.markets[0].name,
           address: result.data.markets[0].address,
           icon: result.data.markets[0].icon,
-          reserves: result.data.markets[0].reserves.map(reserve => reserve.underlyingToken),
-          ...result.data.markets[0].userState,
+          reserves: result.data.markets[0].reserves,
+          healthFactor: result.data.markets[0].userState.healthFactor,
+          totalCollateralBase: result.data.markets[0].userState.totalCollateralBase,
+          totalDebtBase: result.data.markets[0].userState.totalDebtBase,
           currentLiquidationThreshold: result.data.markets[0].userState.currentLiquidationThreshold.value,
           netAPY: result.data.markets[0].userState.netAPY.value,
           userDebtAPY: result.data.markets[0].userState.userDebtAPY.value,
@@ -96,6 +100,52 @@ export class AaveMarketService {
       catchError((error) => {
         throw new Error(
           `Error fetching data from The Graph API. Please check your query and try again. ${error}`,
+        );
+      })
+    );
+  }
+
+  findReserveByTokenAddress(market: AaveMarketInterface, tokenAddress: string): Reserve {
+    const reserve = market.reserves.find(reserve => reserve.underlyingToken.address.toLowerCase() === tokenAddress.toLowerCase());
+    if (!reserve) {
+      throw new Error(`Reserve with token address ${tokenAddress} not found in market ${market.name}`);
+    }
+    return reserve;
+  }
+
+  getUserSupplies(accountAddress: string, chainId: number, market: AaveMarketInterface): Observable<AaveUserSuppliesInterface[]> {
+    return this.apollo.query<{ userSupplies: AaveUserSuppliesInterface[] }>({
+      query: GET_USER_SUPPLIES,
+      variables: { request: { user: accountAddress.toLowerCase(), markets: [ { chainId, address: market.address } ] } },
+    }).pipe(
+      map((result) => {
+        if (!result || !result.data || !result.data.userSupplies) {
+          throw new Error('No supplies found for the given user and market chain');
+        }
+        return result.data.userSupplies;
+      }),
+      catchError((error) => {
+        throw new Error(
+          `Error fetching user supplies from The Graph API. Please check your query and try again. ${error}`,
+        );
+      })
+    );
+  }
+
+  getUserBorrows(accountAddress: string, marketChain: string): Observable<AaveUserBorrowsInterface[]> {
+    return this.apollo.query<{ userBorrows: AaveUserBorrowsInterface[] }>({
+      query: GET_USER_BORROWS,
+      variables: { request: { user: accountAddress.toLowerCase(), marketChain } },
+    }).pipe(
+      map((result) => {
+        if (!result || !result.data || !result.data.userBorrows) {
+          throw new Error('No borrows found for the given user and market chain');
+        }
+        return result.data.userBorrows;
+      }),
+      catchError((error) => {
+        throw new Error(
+          `Error fetching user borrows from The Graph API. Please check your query and try again. ${error}`,
         );
       })
     );
