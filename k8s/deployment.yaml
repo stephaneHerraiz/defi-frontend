@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: defi-frontend
-          image: 192.168.0.68:32000/defi-frontend:latest
+          image: ghcr.io/stephaneherraiz/defi-frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
