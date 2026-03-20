@@ -41,3 +41,17 @@
     <router-outlet />
   </div>
 </div>
+
+<p-dialog
+  [visible]="!isAuthenticated"
+  [modal]="true"
+  [closable]="false"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="connect-wallet-dialog"
+>
+  <div class="connect-wallet-content">
+    <img src="logo_black.png" alt="DeFi Logo" class="connect-wallet-logo" />
+    <p-button label="Connect your wallet" icon="pi pi-wallet" (click)="login()" />
+  </div>
+</p-dialog>

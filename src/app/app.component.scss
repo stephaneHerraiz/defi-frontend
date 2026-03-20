@@ -82,3 +82,26 @@
   overflow: auto;
   background: var(--p-content-background);
 }
+
+::ng-deep .connect-wallet-dialog {
+  .p-dialog-header {
+    display: none;
+  }
+
+  .p-dialog-content {
+    background: transparent;
+    padding: 2rem;
+  }
+}
+
+.connect-wallet-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.connect-wallet-logo {
+  width: 200px;
+}

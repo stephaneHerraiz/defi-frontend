@@ -30,6 +30,7 @@ echarts.use([
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
+import { DialogModule } from 'primeng/dialog';
 import { AuthService } from './services/auth.service';
 import { MenuItem } from 'primeng/api';
 
@@ -42,6 +43,7 @@ import { MenuItem } from 'primeng/api';
     ToolbarModule,
     ButtonModule,
     MenuModule,
+    DialogModule,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
