@@ -1,0 +1,34 @@
+<p-toast />
+<p-confirmDialog />
+
+<p-card header="Wallet management">
+  <div class="add-form">
+    <input pInputText placeholder="Wallet address (0x...)" [(ngModel)]="newAccount.address" class="address-input" />
+    <input pInputText placeholder="Label" [(ngModel)]="newAccount.label" class="label-input" />
+    <p-button label="Add" icon="pi pi-plus" (click)="addAccount()" [disabled]="!newAccount.address || !newAccount.label" />
+  </div>
+
+  <p-table [value]="accounts" [loading]="loading" stripedRows>
+    <ng-template #header>
+      <tr>
+        <th>Label</th>
+        <th>Address</th>
+        <th style="width: 5rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-account>
+      <tr>
+        <td>{{ account.label }}</td>
+        <td class="address-cell">{{ account.address }}</td>
+        <td>
+          <p-button icon="pi pi-trash" severity="danger" [text]="true" (click)="confirmDelete(account, $event)" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="3" class="empty-message">No accounts configured. Add one above.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-card>

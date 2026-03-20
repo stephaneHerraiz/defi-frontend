@@ -32,11 +32,13 @@ MetaMask wallet-based auth via `AuthService`. Flow: detect MetaMask provider →
 - `AaveMarketService` — fetches market data from both the backend REST API and Aave GraphQL. Contains Bollinger Band scenario calculations for health factor risk assessment.
 - `HistoricalPriceDataService` — provides historical price data and Bollinger Band calculations for reserves.
 - `LifiService` — queries LI.FI API for chain info and wallet transfer history.
+- `AccountService` — CRUD operations for user wallet accounts (GET, POST, DELETE via backend REST API).
 - `AuthService` — MetaMask sign-in, JWT management, logout events via RxJS Subjects.
 
 ### Routes
 - `/aave` — Aave market dashboard (default route)
 - `/pnl` — DeFi PnL (Profit & Loss) view
+- `/config` — User configuration page (wallet account management)
 
 ### UI Framework
 PrimeNG (v21) with Aura theme preset. Charts use ECharts via `ngx-echarts` (tree-shaken imports in `AppComponent`).
