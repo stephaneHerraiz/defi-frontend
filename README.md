@@ -1,59 +1,47 @@
-# DefiFrontend
+# DeFi Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.6.
+DeFi Frontend is an Angular 21 application for monitoring DeFi (Decentralized Finance) positions. It tracks Aave lending/borrowing positions and cross-chain transfers via LI.FI, with MetaMask wallet authentication.
 
-## Development server
+## Common Commands
 
-To start a local development server, run:
+- **Dev server:** `yarn start` (serves at http://localhost:4200, uses development environment config)
+- **Build:** `yarn build` (production build to `dist/defi-frontend/`)
+- **Test:** `yarn test` (Karma + Jasmine)
+- **Generate component:** `ng generate component <name>` (uses SCSS by default)
 
-```bash
-ng serve
-```
+Package manager is **yarn** (see `yarn.lock`).
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Architecture
 
-## Code scaffolding
+### Authentication Flow
+MetaMask wallet-based auth via `AuthService`. Flow: detect MetaMask provider → request account access → get nonce from backend → sign nonce → verify signature → receive JWT. Token stored in `localStorage` as `JWT_Token`, address as `User_Address`.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### HTTP Layer
+`BaseUrlInterceptor` prepends `environment.apiUrl` to relative URLs and attaches JWT Bearer token. Absolute URLs (starting with `http`) bypass the interceptor — this is how direct API calls (e.g., Aave GraphQL, LI.FI) avoid the base URL.
 
-```bash
-ng generate component component-name
-```
+### Data Sources
+- **Backend API** (`environment.apiUrl` = `https://defidb.online/api`): Aave market history, transactions, market status, user accounts. Dev environment can point to `http://localhost:3000`.
+- **Aave GraphQL API** (`https://api.v3.aave.com/graphql`): Market reserves, user supplies/borrows. Accessed via Apollo Angular client configured in `app.config.ts`.
+- **LI.FI API** (`https://li.quest`): Cross-chain transfer data. Called directly via `HttpClient` in `LifiService` (bypasses base URL interceptor).
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Key Services
+- `AaveMarketService` — fetches market data from both the backend REST API and Aave GraphQL. Contains Bollinger Band scenario calculations for health factor risk assessment.
+- `HistoricalPriceDataService` — provides historical price data and Bollinger Band calculations for reserves.
+- `LifiService` — queries LI.FI API for chain info and wallet transfer history.
+- `AccountService` — CRUD operations for user wallet accounts (GET, POST, DELETE via backend REST API).
+- `AuthService` — MetaMask sign-in, JWT management, logout events via RxJS Subjects.
 
-```bash
-ng generate --help
-```
+### Routes
+- `/aave` — Aave market dashboard (default route)
+- `/pnl` — DeFi PnL (Profit & Loss) view
+- `/config` — User configuration page (wallet account management)
 
-## Building
+### UI Framework
+PrimeNG (v21) with Aura theme preset. Charts use ECharts via `ngx-echarts` (tree-shaken imports in `AppComponent`).
 
-To build the project run:
+### Component Style
+All components are **standalone** (no NgModules). SCSS for styling. TypeScript strict mode enabled.
 
-```bash
-ng build
-```
+## Deployment
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Multi-stage Docker build: Node 20 Alpine builds the app, nginx Alpine serves it. Kubernetes deployment config in `k8s/deployment.yaml`.
