@@ -41,12 +41,15 @@ export class AaveMarketService {
     return this.http.get<AaveChainInterface[]>('aavemarkets/markets');
   }
 
-  getMarketRiskManagement(accountAddress: string, chain: AaveChainInterface, market: AaveMarketInterface): Observable<PortfolioRiskResultInterface> {
+  getMarketRiskManagement(accountAddress: string, chain: AaveChainInterface, market: AaveMarketInterface, totalDebtUSD?: number): Observable<PortfolioRiskResultInterface> {
     const params: any = {
       accountAddress,
       marketChain: market.address,
       chainId: chain.chainId,
     };
+    if (totalDebtUSD !== undefined) {
+      params['customDebt'] = totalDebtUSD;
+    }
     return this.http.get<PortfolioRiskResultInterface>('aavemarkets/risk-management', {
       params,
     });

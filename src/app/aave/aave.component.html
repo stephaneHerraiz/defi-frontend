@@ -40,6 +40,27 @@
         </p-panel>
     </div>
   </div>
+  <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px;">
+    <div class="card fit-content">
+      <p-panel header="Simulated borrowed debt (USD)">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <p-inputnumber
+            [(ngModel)]="customBorrowUSD"
+            (onInput)="onCustomBorrowChange()"
+            mode="currency"
+            currency="USD"
+            locale="en-US"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [min]="0"
+            [step]="100"
+            [showButtons]="true"
+          />
+          <button pButton icon="pi pi-replay" [disabled]="!customBorrowChanged" (click)="resetCustomBorrow()" pTooltip="Reset to actual debt"></button>
+        </div>
+      </p-panel>
+    </div>
+  </div>
   <p-card class="scenario-card" header="Portfolio Risk Analysis">
     <p-accordion>
       <p-accordion-panel value="0">

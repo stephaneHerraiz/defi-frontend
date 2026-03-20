@@ -35,6 +35,9 @@ MetaMask wallet-based auth via `AuthService`. Flow: detect MetaMask provider →
 - `AccountService` — CRUD operations for user wallet accounts (GET, POST, DELETE via backend REST API).
 - `AuthService` — MetaMask sign-in, JWT management, logout events via RxJS Subjects.
 
+### Portfolio Risk Analysis — Simulated Debt
+The Aave dashboard includes a "Simulated borrowed debt" input that lets users override the current debt for risk analysis. The backend `aavemarkets/risk-management` endpoint accepts an optional `customDebt` query parameter. On account/chain change, the input resets to the actual `totalDebtBase` and the API is called without `customDebt`. When the user edits the value, the API call is debounced (1.5s) and includes `customDebt`. A reset button restores actual debt and re-calls without the param.
+
 ### Routes
 - `/aave` — Aave market dashboard (default route)
 - `/pnl` — DeFi PnL (Profit & Loss) view

@@ -10,11 +10,15 @@ import { SelectModule } from 'primeng/select';
 import { AccordionModule } from 'primeng/accordion';
 import { SliderModule } from 'primeng/slider';
 import { PanelModule } from 'primeng/panel';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { SkeletonModule } from 'primeng/skeleton';
+import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
 import { WalletSelectionComponent } from '../wallet-selection/wallet-selection.component';
 import { AccountInterface } from '../interfaces/account.interface';
 import { AccountService } from '../services/account.service';
-import { forkJoin, map, mergeMap, Observable } from 'rxjs';
+import { forkJoin, map, mergeMap, Observable, Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { AaveTransactionActions, AaveTransactionInterface } from '../interfaces/aave-transaction.interface';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -108,6 +112,9 @@ const DEFAULT_OPTIONS: EChartsCoreOption = {
     SliderModule,
     PanelModule,
     SkeletonModule,
+    InputNumberModule,
+    ButtonModule,
+    TooltipModule,
   ],
   templateUrl: './aave.component.html',
   styleUrl: './aave.component.scss'
@@ -120,6 +127,8 @@ export class AaveComponent implements OnInit {
   selectedUserChain: AaveChainInterface | null = null;
   reservesInfo: UnderlyingToken[] = [];
   customBorrowUSD = 0;
+  customBorrowChanged = false;
+  private customBorrowDebounce$ = new Subject<void>();
   
   private aaveMarketService = inject(AaveMarketService);
   private accountService = inject(AccountService);
@@ -140,6 +149,12 @@ export class AaveComponent implements OnInit {
 
     this.authService.logged$.subscribe(() => {
       this.getAccountsAndMarkets();
+    });
+
+    this.customBorrowDebounce$.pipe(debounceTime(1500)).subscribe(() => {
+      if (this.selectedMarket) {
+        this.getPortfolioRiskManagement(this.selectedMarket, this.customBorrowUSD);
+      }
     });
   }
 
@@ -171,6 +186,7 @@ export class AaveComponent implements OnInit {
         this.reservesInfo = market.reserves.map(r => r.underlyingToken);
         this.selectedMarket = market;
         this.customBorrowUSD = this.selectedMarket.totalDebtBase;
+        this.customBorrowChanged = false;
         this.getPortfolioRiskManagement(market);
       });
     }
@@ -182,12 +198,13 @@ export class AaveComponent implements OnInit {
       this.reservesInfo = market.reserves.map(r => r.underlyingToken);
       this.selectedMarket = market;
       this.customBorrowUSD = this.selectedMarket.totalDebtBase;
+      this.customBorrowChanged = false;
       this.getPortfolioRiskManagement(market);
     });
     
   }
 
-  getPortfolioRiskManagement(market: AaveMarketInterface) {
+  getPortfolioRiskManagement(market: AaveMarketInterface, totalDebtUSD?: number) {
     if (this.selectedAccount !== null && market !== null && this.selectedUserChain !== null) {
       const userAddress = this.authService.getUserAddress();
       if(!userAddress) {
@@ -197,12 +214,26 @@ export class AaveComponent implements OnInit {
         supplies: this.aaveMarketService.getUserSupplies(this.selectedAccount.address, this.selectedUserChain.chainId, market),
         riskManagement: this.aaveMarketService.getMarketRiskManagement(
           this.selectedAccount.address,
-          this.selectedUserChain, 
-          market)
+          this.selectedUserChain,
+          market,
+          totalDebtUSD)
       }).subscribe(({ supplies, riskManagement }) => {
           this.portfolioRiskResult = riskManagement;
           this.supplies = supplies;
       })
+    }
+  }
+
+  onCustomBorrowChange() {
+    this.customBorrowChanged = true;
+    this.customBorrowDebounce$.next();
+  }
+
+  resetCustomBorrow() {
+    if (this.selectedMarket) {
+      this.customBorrowUSD = this.selectedMarket.totalDebtBase;
+      this.customBorrowChanged = false;
+      this.getPortfolioRiskManagement(this.selectedMarket);
     }
   }
 
